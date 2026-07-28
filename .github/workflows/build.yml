@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout code
@@ -18,51 +18,17 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang lld make git golang-go
-
-    - name: Setup .NET SDK
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
+        sudo apt-get install -y clang lld make
 
     - name: Setup OpenOrbis Toolchain
       run: |
-        sudo mkdir -p /opt/openorbis/bin/linux
-        curl -sL https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/download/v0.5.2/v0.5.2.tar.gz \
-          | sudo tar -xz --strip-components=2 -C /opt/openorbis \
-            OpenOrbis/PS4Toolchain/include \
-            OpenOrbis/PS4Toolchain/lib \
-            OpenOrbis/PS4Toolchain/link.x
-        echo "OO_PS4_TOOLCHAIN=/opt/openorbis" >> $GITHUB_ENV
-
-    - name: Build create-fself
-      run: |
-        git clone https://github.com/OpenOrbis/create-fself.git /tmp/create-fself
-        cd /tmp/create-fself/cmd/create-fself
-        # Fix Windows-style path separators in go.mod
-        sed -i 's|..\\..\\pkg\\fself|../../pkg/fself|g' go.mod
-        sed -i 's|..\\..\\\pkg\\oelf|../../pkg/oelf|g' go.mod
-        sed -i 's|..\\..\\\\pkg\\oelf|../../pkg/oelf|g' go.mod
-        go build -o /opt/openorbis/bin/linux/create-fself .
-        chmod +x /opt/openorbis/bin/linux/create-fself
-
-    - name: Build PkgTool.Core
-      run: |
-        git clone https://github.com/maxton/LibOrbisPkg.git /tmp/LibOrbisPkg
-        cd /tmp/LibOrbisPkg
-        # Retarget from netcoreapp3.0 to net8.0 for SDK compatibility
-        sed -i 's|<TargetFramework>netcoreapp3.0</TargetFramework>|<TargetFramework>net8.0</TargetFramework>|g' \
-          PkgTool.Core/PkgTool.Core.csproj \
-          LibOrbisPkg.Core/LibOrbisPkg.Core.csproj
-        cd PkgTool.Core
-        dotnet publish -c Release -r linux-x64 --self-contained true
-        sudo cp bin/Release/net8.0/linux-x64/publish/PkgTool.Core /opt/openorbis/bin/linux/PkgTool.Core
-        sudo chmod +x /opt/openorbis/bin/linux/PkgTool.Core
+        curl -sL https://github.com/LightningMods/OpenOrbis-PS4-Toolchain/releases/download/v0.50001/OOSDK.tar.gz \
+          | tar -xz -C "$GITHUB_WORKSPACE"
+        chmod +x "$GITHUB_WORKSPACE/OpenOrbis/PS4Toolchain/bin/linux/"*
+        echo "OO_PS4_TOOLCHAIN=$GITHUB_WORKSPACE/OpenOrbis/PS4Toolchain" >> "$GITHUB_ENV"
 
     - name: Build Store
       run: |
-        export OO_PS4_TOOLCHAIN=/opt/openorbis
-        export PATH=$PATH:/opt/openorbis/bin/linux
         cd Store
         make -j$(nproc)
 
