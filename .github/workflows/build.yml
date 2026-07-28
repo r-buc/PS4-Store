@@ -2,7 +2,7 @@ name: Build PS4 Store
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master, main, 'copilot/**' ]
   pull_request:
     branches: [ master, main ]
   workflow_dispatch:
