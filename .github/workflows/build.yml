@@ -31,6 +31,11 @@ jobs:
       run: |
         cd Store
         make -j$(nproc)
+        # PkgTool.Core names the output after content_id; rename for consistency
+        pkg=$(ls *.pkg 2>/dev/null | head -1)
+        if [ -n "$pkg" ] && [ "$pkg" != "Store-R2.pkg" ]; then
+          mv "$pkg" Store-R2.pkg
+        fi
 
     - name: Upload PKG artifact
       uses: actions/upload-artifact@v4
