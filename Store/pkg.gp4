@@ -19,10 +19,6 @@
     <file targ_path="assets/fonts/HelveticaWorld-Multi.ttf" orig_path="../App Media-Assets/assets/fonts/HelveticaWorld-Multi.ttf" />
     <file targ_path="assets/fonts/NotoSansJP-Regular.ttf" orig_path="../App Media-Assets/assets/fonts/NotoSansJP-Regular.ttf" />
     <file targ_path="assets/fonts/NotoSansKR-Regular.ttf" orig_path="../App Media-Assets/assets/fonts/NotoSansKR-Regular.ttf" />
-    <file targ_path="assets/aaa.png" orig_path="../App Media-Assets/assets/aaa.png" />
-    <file targ_path="assets/backgroundUnitOffline.png" orig_path="../App Media-Assets/assets/backgroundUnitOffline.png" />
-    <file targ_path="assets/btn_tri.png" orig_path="../App Media-Assets/assets/btn_tri.png" />
-    <file targ_path="assets/btn_X.png" orig_path="../App Media-Assets/assets/btn_X.png" />
     <file targ_path="assets/load.png" orig_path="../App Media-Assets/assets/load.png" />
     <file targ_path="langs/0/lang.ini" orig_path="../App Media-Assets/langs/0/lang.ini" />
     <file targ_path="langs/1/lang.ini" orig_path="../App Media-Assets/langs/1/lang.ini" />
