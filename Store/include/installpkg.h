@@ -13,6 +13,7 @@
 #define TYPE_BEGIN(name, size) name { union { TYPE_PAD(size)
 #define TYPE_END(...) }; } __VA_ARGS__
 #define TYPE_FIELD(field, offset) struct { TYPE_PAD(offset); field; }
+#define TYPE_CHECK_SIZE(type, size) static_assert(sizeof(type) == (size), #type " size mismatch")
 
 #define SWAP32(x) \
 	((uint32_t)( \
