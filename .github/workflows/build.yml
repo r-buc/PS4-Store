@@ -7,6 +7,9 @@ on:
     branches: [ master, main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-22.04
@@ -36,6 +39,7 @@ jobs:
         if [ -n "$pkg" ] && [ "$pkg" != "Store-R2.pkg" ]; then
           mv "$pkg" Store-R2.pkg
         fi
+        test -f Store-R2.pkg || { echo "Error: Store-R2.pkg was not created"; exit 1; }
 
     - name: Upload PKG artifact
       uses: actions/upload-artifact@v4
