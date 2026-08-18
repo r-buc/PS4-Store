@@ -419,13 +419,18 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     snprintf(buffer, sizeof(buffer) - 1, "%s", content_name.c_str());
     log_info("%s", buffer);
 
+    const std::string& picpath_str = ta->token_d[PICPATH].off;
+    const char* icon_path = (!picpath_str.empty() && if_exists(picpath_str.c_str()))
+        ? picpath_str.c_str()
+        : "/update/fakepic.png";
+
     struct bgft_download_param_ex download_params;
     memset(&download_params, 0, sizeof(download_params));
     download_params.param.entitlement_type  = 5;
     download_params.param.id                = "";
     download_params.param.content_url       = pkg_url;
     download_params.param.content_name      = buffer;
-    download_params.param.icon_path         = "/update/fakepic.png";
+    download_params.param.icon_path         = icon_path;
     download_params.param.playgo_scenario_id = "0";
     download_params.param.option            = BGFT_TASK_OPTION_INVISIBLE;
     download_params.param.package_size      = pkg_size;
@@ -632,13 +637,19 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
 
         snprintf(buffer, 254, "%s via Store", title_id);
         log_info( "%s", buffer);
+
+        const std::string& picpath_str = ta->token_d[PICPATH].off;
+        const char* icon_path = (!picpath_str.empty() && if_exists(picpath_str.c_str()))
+            ? picpath_str.c_str()
+            : "/update/fakepic.png";
+
         struct bgft_download_param_ex download_params;
         memset(&download_params, 0, sizeof(download_params));
         download_params.param.entitlement_type = 5;
         download_params.param.id = "";
         download_params.param.content_url = fullpath;
         download_params.param.content_name = buffer;
-        download_params.param.icon_path = "/update/fakepic.png";
+        download_params.param.icon_path = icon_path;
         download_params.param.playgo_scenario_id = "0";
         download_params.param.option = BGFT_TASK_OPTION_INVISIBLE;
 
