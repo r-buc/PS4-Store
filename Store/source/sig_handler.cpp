@@ -72,12 +72,12 @@ void upload_crash_log(){
     CURL *curl = nullptr;
     CURLcode res;
     std::string tk, tmp;
-    if(!if_exists("/user/app/NPXS39041/logs/store.log")){
+    if(!if_exists("/user/app/RPIHBSTOR/logs/store.log")){
         log_debug("Log file does not exist");
         msgok(NORMAL, "Log does not exist!");
         return;
     }
-    std::string logContent = readFile("/user/app/NPXS39041/logs/store.log");
+    std::string logContent = readFile("/user/app/RPIHBSTOR/logs/store.log");
     std::string encodedContent = Base64::Encode(logContent);
     std::string path = generate_random_log_filename();
     std::string commitMessage = "The Store has crashed on " + generate_timestamp();
