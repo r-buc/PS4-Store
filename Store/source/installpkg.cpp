@@ -10,6 +10,7 @@
 #include <ostream>
 #include <fstream>
 #include <sstream>
+#include <curl/curl.h>
 
 #if __has_include("<byteswap.h>")
 #include <byteswap.h>
@@ -250,6 +251,214 @@ bool pkg_is_patch(const char* src_dest) {
     }
 
     return false;
+}
+
+/* Forward declaration — defined below */
+void *install_prog(void* argument);
+
+/* Memory buffer for curl range fetch */
+struct MemBuf {
+    uint8_t* data;
+    size_t   size;
+    size_t   capacity;
+};
+
+static size_t membuf_write(void* ptr, size_t size, size_t nmemb, void* userdata) {
+    MemBuf* buf = (MemBuf*)userdata;
+    size_t incoming = size * nmemb;
+    size_t needed   = buf->size + incoming;
+    if (needed > buf->capacity) {
+        uint8_t* tmp = (uint8_t*)realloc(buf->data, needed + 1);
+        if (!tmp) return 0;
+        buf->data     = tmp;
+        buf->capacity = needed;
+    }
+    memcpy(buf->data + buf->size, ptr, incoming);
+    buf->size += incoming;
+    if (buf->data) buf->data[buf->size] = 0;
+    return incoming;
+}
+
+bool pkg_fetch_remote_header(const char* pkg_url, struct pkg_remote_info* out) {
+    if (!pkg_url || !out) return false;
+
+    static const uint8_t magic[] = { '\x7F', 'C', 'N', 'T' };
+
+    MemBuf buf = {};
+    buf.data     = (uint8_t*)malloc(SIZEOF_PKG_HEADER + 1);
+    buf.capacity = SIZEOF_PKG_HEADER;
+    buf.size     = 0;
+    if (!buf.data) return false;
+
+    char range_str[64];
+    snprintf(range_str, sizeof(range_str), "0-%d", (int)(SIZEOF_PKG_HEADER - 1));
+
+    char ua[100];
+    snprintf(ua, sizeof(ua), USER_AGENT"-0x%x", SysctlByName_get_sdk_version());
+
+    CURL* curl = curl_easy_init();
+    if (!curl) { free(buf.data); return false; }
+
+    curl_easy_setopt(curl, CURLOPT_URL,           pkg_url);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT,      ua);
+    curl_easy_setopt(curl, CURLOPT_RANGE,          range_str);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,  membuf_write);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA,      &buf);
+    curl_easy_setopt(curl, CURLOPT_FAILONERROR,    1L);
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS,     1L);
+
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    if (res != CURLE_OK || buf.size < sizeof(struct pkg_header)) {
+        log_error("pkg_fetch_remote_header: curl failed or short read (%zu bytes): %s",
+                  buf.size, curl_easy_strerror(res));
+        free(buf.data);
+        return false;
+    }
+
+    const struct pkg_header* hdr = (const struct pkg_header*)buf.data;
+
+    if (memcmp(hdr->magic, magic, sizeof(magic)) != 0) {
+        log_error("pkg_fetch_remote_header: bad PKG magic");
+        free(buf.data);
+        return false;
+    }
+
+    memset(out, 0, sizeof(*out));
+
+    /* copy content_id */
+    strncpy(out->content_id, hdr->content_id, PKG_CONTENT_ID_SIZE);
+    out->content_id[PKG_CONTENT_ID_SIZE] = '\0';
+
+    /*
+     * Derive title_id from content_id.
+     * content_id format: XXNNNNNN-TTTTNNNNN_00-...
+     * The title_id is the part after the first '-', up to '_'.
+     * e.g. "EP0000-CUSA00000_00-..." -> title_id = "CUSA00000"
+     */
+    const char* dash = strchr(out->content_id, '-');
+    if (dash) {
+        dash++; /* skip '-' */
+        const char* under = strchr(dash, '_');
+        size_t len = under ? (size_t)(under - dash) : strlen(dash);
+        if (len >= sizeof(out->title_id)) len = sizeof(out->title_id) - 1;
+        strncpy(out->title_id, dash, len);
+        out->title_id[len] = '\0';
+    }
+
+    out->package_size = BE64(hdr->package_size);
+
+    unsigned int flags = BE32(hdr->content_flags);
+    out->is_patch = (flags & PKG_CONTENT_FLAGS_FIRST_PATCH ||
+                     flags & PKG_CONTENT_FLAGS_SUBSEQUENT_PATCH ||
+                     flags & PKG_CONTENT_FLAGS_DELTA_PATCH ||
+                     flags & PKG_CONTENT_FLAGS_CUMULATIVE_PATCH);
+
+    strncpy(out->package_type,     "PS4", sizeof(out->package_type) - 1);
+    strncpy(out->package_sub_type, "",    sizeof(out->package_sub_type) - 1);
+
+    log_info("pkg_fetch_remote_header: content_id=%s title_id=%s size=%lu is_patch=%d",
+             out->content_id, out->title_id, (unsigned long)out->package_size, (int)out->is_patch);
+
+    free(buf.data);
+    return true;
+}
+
+uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
+{
+    int  ret = -1;
+    int  task_id = -1;
+    char buffer[255];
+
+    ta->status   = INSTALLING_APP;
+    ta->progress = 0.0f;
+
+    struct pkg_remote_info rinfo;
+    if (!pkg_fetch_remote_header(pkg_url, &rinfo))
+        return PKG_ERROR("pkg_fetch_remote_header", ret, ta);
+
+    if (!app_inst_util_init())
+        return PKG_ERROR("AppInstUtil", ret, ta);
+
+    if (!bgft_init())
+        return PKG_ERROR("BGFT_initialization", ret, ta);
+
+    snprintf(buffer, sizeof(buffer) - 1, "%s via Store", rinfo.title_id);
+    log_info("%s", buffer);
+
+    struct bgft_download_param_ex download_params;
+    memset(&download_params, 0, sizeof(download_params));
+    download_params.param.entitlement_type  = 5;
+    download_params.param.id                = "";
+    download_params.param.content_url       = pkg_url;
+    download_params.param.content_name      = buffer;
+    download_params.param.icon_path         = "/update/fakepic.png";
+    download_params.param.playgo_scenario_id = "0";
+    download_params.param.option            = BGFT_TASK_OPTION_INVISIBLE;
+    download_params.param.package_type      = rinfo.package_type;
+    download_params.param.package_sub_type  = rinfo.package_sub_type;
+    download_params.param.package_size      = (unsigned long)rinfo.package_size;
+    download_params.slot                    = 0;
+
+retry_remote:
+    log_info("%s 1", __FUNCTION__);
+    ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
+    if (ret == 0x80990088 || ret == 0x80990015)
+    {
+        ret = sceAppInstUtilAppUnInstall(rinfo.title_id);
+        if (ret != 0)
+            return PKG_ERROR("sceAppInstUtilAppUnInstall", ret, ta);
+        goto retry_remote;
+    }
+    else if (ret)
+        return PKG_ERROR("sceBgftServiceIntDownloadRegisterTaskByStorageEx", ret, ta);
+
+    log_info("Task ID(s): 0x%08X", task_id);
+
+    ret = sceBgftServiceDownloadStartTask(task_id);
+    if (ret)
+        return PKG_ERROR("sceBgftDownloadStartTask", ret, ta);
+
+    struct install_args* args = new install_args;
+    args->title_id  = rinfo.title_id;
+    args->task_id   = task_id;
+    args->l         = ta;
+    args->path      = ""; /* no local file */
+    args->is_thread = !Auto_install;
+    args->delete_pkg = false; /* nothing to delete on disk */
+
+    if (Auto_install) {
+        install_prog((void*)args);
+    }
+    else if (set.Legacy_Install.load()) {
+        pthread_t thread = 0;
+        ret = pthread_create(&thread, NULL, install_prog, (void*)args);
+        log_debug("pthread_create for %x, ret:%d", task_id, ret);
+    }
+    else {
+        ret = sceBgftServiceDownloadStartTask(args->task_id);
+        if (ret) {
+            return PKG_ERROR("sceBgftServiceDownloadStartTask", ret, ta);
+        } else {
+            if (icon_panel && !icon_panel->item_d[args->l->g_idx].token_d[ID].off.empty()) {
+                icon_panel->item_d[ta->g_idx].interruptible = false;
+                icon_panel->item_d[ta->g_idx].update_status = NO_UPDATE;
+                download_panel->item_d[0].token_d[0].off = download_panel_text[0] = getLangSTR(REINSTALL_APP);
+            }
+            ta->g_idx  = -1;
+            ta->status = READY;
+            layout_refresh_VBOs();
+            log_info("package successfully started in the background");
+        }
+    }
+
+    log_info("%s(%s) done.", __FUNCTION__, pkg_url);
+    ta->dst.clear();
+
+    return 0;
 }
 
 void *install_prog(void* argument)
