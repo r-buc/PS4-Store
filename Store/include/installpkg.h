@@ -162,16 +162,6 @@ TYPE_END();
 TYPE_CHECK_SIZE(struct pkg_header, SIZEOF_PKG_HEADER);
 
 
-struct pkg_remote_info {
-    char content_id[PKG_CONTENT_ID_SIZE + 1];
-    char title_id[16];
-    char package_type[8];
-    char package_sub_type[8];
-    uint64_t package_size;
-    bool is_patch;
-};
-
-bool pkg_fetch_remote_header(const char* pkg_url, struct pkg_remote_info* out);
 uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install);
 
 bool app_inst_util_is_exists(const char* title_id, bool* exists);
