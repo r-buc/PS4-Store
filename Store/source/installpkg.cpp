@@ -388,6 +388,8 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
         log_debug("pthread_create for %x, ret:%d", task_id, ret);
         if (ret == 0)
             pthread_detach(thread);
+        else
+            delete args;
     }
     else {
         ret = sceBgftServiceDownloadStartTask(task_id);
@@ -395,7 +397,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
             delete args;
             return PKG_ERROR("sceBgftServiceDownloadStartTask", ret, ta);
         } else {
-            if (icon_panel && !icon_panel->item_d[args->l->g_idx].token_d[ID].off.empty()) {
+            if (icon_panel && !icon_panel->item_d[ta->g_idx].token_d[ID].off.empty()) {
                 icon_panel->item_d[ta->g_idx].interruptible = false;
                 icon_panel->item_d[ta->g_idx].update_status = NO_UPDATE;
                 download_panel->item_d[0].token_d[0].off = download_panel_text[0] = getLangSTR(REINSTALL_APP);
