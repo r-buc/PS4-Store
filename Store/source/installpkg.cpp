@@ -386,6 +386,8 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
         pthread_t thread = 0;
         ret = pthread_create(&thread, NULL, install_prog, (void*)args); /* install_prog deletes args */
         log_debug("pthread_create for %x, ret:%d", task_id, ret);
+        if (ret == 0)
+            pthread_detach(thread);
     }
     else {
         ret = sceBgftServiceDownloadStartTask(task_id);
