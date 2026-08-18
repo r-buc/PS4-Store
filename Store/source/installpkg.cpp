@@ -356,11 +356,11 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
             if (!is_patch) {
                 /* Matches flatz/ps4_remote_pkg_installer's
                  * bgft_download_register_package_task(): register directly
-                 * via sceBgftDownloadRegisterTask(), rather than the
+                 * via sceBgftServiceIntDownloadRegisterTask(), rather than the
                  * internal storage-Ex variant, for non-patch remote PKGs. */
-                ret = sceBgftDownloadRegisterTask(&download_params.param, &task_id);
+                ret = sceBgftServiceIntDownloadRegisterTask(&download_params.param, &task_id);
             } else {
-                ret = sceBgftDebugDownloadRegisterPkg(&download_params.param, &task_id);
+                ret = sceBgftServiceIntDebugDownloadRegisterPkg(&download_params.param, &task_id);
             }
             if (ret == SCE_BGFT_ERROR_ALREADY_REGISTERED || ret == SCE_BGFT_ERROR_ALREADY_INSTALLED) {
                 if (++retry > MAX_RETRIES)
@@ -399,8 +399,14 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
         log_debug("pthread_create for %x, ret:%d", task_id, ret);
         if (ret == 0)
             pthread_detach(thread);
-        else
+        else {
             delete args;
+            /* No thread will monitor this task — stop it rather than
+             * leaving it running in the background with no progress
+             * tracking. */
+            sceBgftServiceDownloadStopTask(task_id);
+            return PKG_ERROR("pthread_create", ret, ta);
+        }
     }
     else {
         ret = sceBgftServiceDownloadStartTask(task_id);
@@ -596,7 +602,7 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
         if (!is_patch) {
             ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
         } else {
-            ret = sceBgftDebugDownloadRegisterPkg(&download_params.param, &task_id);
+            ret = sceBgftServiceIntDebugDownloadRegisterPkg(&download_params.param, &task_id);
         }
         if(ret == SCE_BGFT_ERROR_ALREADY_REGISTERED || ret == SCE_BGFT_ERROR_ALREADY_INSTALLED)
         {
