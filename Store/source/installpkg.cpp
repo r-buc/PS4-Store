@@ -376,9 +376,38 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     ta->status   = INSTALLING_APP;
     ta->progress = 0.0f;
 
-    struct pkg_remote_info rinfo;
-    if (!pkg_fetch_remote_header(pkg_url, &rinfo))
-        return PKG_ERROR("pkg_fetch_remote_header", ret, ta);
+    /*
+     * All required metadata is already present in ta->token_d[], loaded from
+     * the store DB by sql_index_tokens().  Use it directly — no extra HTTP
+     * range-request to read the PKG header is needed.
+     *
+     *   ID    -> title_id (e.g. "CUSA00000")
+     *   NAME  -> human-readable package name
+     *   SIZE  -> package size (numeric bytes string in the DB, or falls back
+     *            to the HTTP content-length already fetched by ini_dl_req)
+     */
+    const std::string& title_id   = ta->token_d[ID].off;
+    const std::string& name       = ta->token_d[NAME].off;
+    const std::string& size_str   = ta->token_d[SIZE].off;
+
+    if (title_id.empty()) {
+        log_error("pkginstall_remote: title_id is empty — token_d not populated?");
+        return PKG_ERROR("pkginstall_remote: empty title_id", ret, ta);
+    }
+
+    /* Derive package_size — stored as raw bytes in the DB where available */
+    unsigned long pkg_size = 0;
+    if (!size_str.empty()) {
+        char* end = nullptr;
+        unsigned long parsed = strtoul(size_str.c_str(), &end, 10);
+        if (end && end != size_str.c_str())
+            pkg_size = parsed;
+    }
+
+    /* Use the content-length from the HTTP HEAD (already fetched by ini_dl_req
+     * via dl_from_url_v2) as a more reliable source when available. */
+    if (pkg_size == 0 && ta->contentLength.load() > 0)
+        pkg_size = (unsigned long)ta->contentLength.load();
 
     if (!app_inst_util_init())
         return PKG_ERROR("AppInstUtil", ret, ta);
@@ -386,7 +415,8 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     if (!bgft_init())
         return PKG_ERROR("BGFT_initialization", ret, ta);
 
-    snprintf(buffer, sizeof(buffer) - 1, "%s via Store", rinfo.title_id);
+    const std::string content_name = (!name.empty() ? name : title_id) + " via Store";
+    snprintf(buffer, sizeof(buffer) - 1, "%s", content_name.c_str());
     log_info("%s", buffer);
 
     struct bgft_download_param_ex download_params;
@@ -398,9 +428,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     download_params.param.icon_path         = "/update/fakepic.png";
     download_params.param.playgo_scenario_id = "0";
     download_params.param.option            = BGFT_TASK_OPTION_INVISIBLE;
-    download_params.param.package_type      = rinfo.package_type;
-    download_params.param.package_sub_type  = rinfo.package_sub_type;
-    download_params.param.package_size      = (unsigned long)rinfo.package_size;
+    download_params.param.package_size      = pkg_size;
     download_params.slot                    = 0;
 
     {
@@ -412,7 +440,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
             if (ret == 0x80990088 || ret == 0x80990015) {
                 if (++retry > MAX_RETRIES)
                     return PKG_ERROR("sceBgftServiceIntDownloadRegisterTaskByStorageEx (retry limit)", ret, ta);
-                ret = sceAppInstUtilAppUnInstall(rinfo.title_id);
+                ret = sceAppInstUtilAppUnInstall(title_id.c_str());
                 if (ret != 0)
                     return PKG_ERROR("sceAppInstUtilAppUnInstall", ret, ta);
                 continue;
@@ -426,7 +454,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     log_info("Task ID(s): 0x%08X", task_id);
 
     struct install_args* args = new install_args;
-    args->title_id  = rinfo.title_id;
+    args->title_id  = title_id;
     args->task_id   = task_id;
     args->l         = ta;
     args->path      = ""; /* no local file */
