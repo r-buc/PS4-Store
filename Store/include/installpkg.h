@@ -149,6 +149,10 @@ typedef int SceBgftTaskId;
 #define PKG_CONTENT_FLAGS_CUMULATIVE_PATCH 0x60000000
 #define SIZEOF_PKG_HEADER 0x2000
 
+/* BGFT task registration error codes */
+#define SCE_BGFT_ERROR_ALREADY_REGISTERED 0x80990088
+#define SCE_BGFT_ERROR_ALREADY_INSTALLED  0x80990015
+
 TYPE_BEGIN(struct pkg_header, SIZEOF_PKG_HEADER);
 TYPE_FIELD(uint8_t magic[4], 0x00);
 TYPE_FIELD(uint32_t entry_count, 0x10);

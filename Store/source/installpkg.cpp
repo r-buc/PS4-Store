@@ -351,7 +351,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
             } else {
                 ret = sceBgftDebugDownloadRegisterPkg(&download_params.param, &task_id);
             }
-            if (ret == 0x80990088 || ret == 0x80990015) {
+            if (ret == SCE_BGFT_ERROR_ALREADY_REGISTERED || ret == SCE_BGFT_ERROR_ALREADY_INSTALLED) {
                 if (++retry > MAX_RETRIES)
                     return PKG_ERROR("sceBgftRegisterTask (retry limit)", ret, ta);
                 ret = sceAppInstUtilAppUnInstall(title_id.c_str());
@@ -571,7 +571,7 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
         download_params.param.content_name       = buffer;
         download_params.param.icon_path          = icon_path;
         download_params.param.playgo_scenario_id = "0";
-        download_params.param.option             = BGFT_TASK_OPTION_DISABLE_CDN_QUERY_PARAM;
+        download_params.param.option             = BGFT_TASK_OPTION_INVISIBLE;
         download_params.param.package_type       = "PS4";
         download_params.param.package_sub_type   = "";
         download_params.slot                     = 0;
@@ -583,7 +583,7 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
         } else {
             ret = sceBgftDebugDownloadRegisterPkg(&download_params.param, &task_id);
         }
-        if(ret == 0x80990088 || ret == 0x80990015)
+        if(ret == SCE_BGFT_ERROR_ALREADY_REGISTERED || ret == SCE_BGFT_ERROR_ALREADY_INSTALLED)
         {
             ret = sceAppInstUtilAppUnInstall(&title_id[0]);
             if(ret != 0)
