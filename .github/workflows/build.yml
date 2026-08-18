@@ -1,0 +1,48 @@
+name: Build PS4 Store
+
+on:
+  push:
+    branches: [ master, main, 'copilot/**' ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang lld make
+
+    - name: Setup OpenOrbis Toolchain
+      run: |
+        curl -sL https://github.com/LightningMods/OpenOrbis-PS4-Toolchain/releases/download/v0.50001/OOSDK.tar.gz \
+          | tar -xz -C "$GITHUB_WORKSPACE"
+        chmod +x "$GITHUB_WORKSPACE/OpenOrbis/PS4Toolchain/bin/linux/"*
+        echo "OO_PS4_TOOLCHAIN=$GITHUB_WORKSPACE/OpenOrbis/PS4Toolchain" >> "$GITHUB_ENV"
+
+    - name: Build Store
+      run: |
+        cd Store
+        make -j$(nproc)
+        # PkgTool.Core names the output after content_id; rename for consistency
+        pkg=$(ls *.pkg 2>/dev/null | head -1)
+        if [ -n "$pkg" ] && [ "$pkg" != "Store-R2.pkg" ]; then
+          mv "$pkg" Store-R2.pkg
+        fi
+        test -f Store-R2.pkg || { echo "Error: Store-R2.pkg was not created"; exit 1; }
+
+    - name: Upload PKG artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: PS4-Store-PKG
+        path: Store/Store-R2.pkg

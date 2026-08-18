@@ -29,6 +29,16 @@
 #include <fcntl.h>
 #include <math.h>
 #include <time.h>
+
+#define TYPE_CHECK_SIZE(name, size) \
+	_Static_assert(sizeof(name) == (size), "Size of " #name " != " #size)
+
+#define TYPE_CHECK_FIELD_OFFSET(name, member, offset) \
+	_Static_assert(offsetof(name, member) == (offset), "Offset of " #name "." #member " != " #offset)
+
+#define TYPE_CHECK_FIELD_SIZE(name, member, size) \
+	_Static_assert(sizeof(((name*)0)->member) == (size), "Size of " #name "." #member " != " #size)
+
 #include "lang.h"
 
 #ifdef __ORBIS__
@@ -252,16 +262,6 @@ int32_t netInit(void);
 #ifndef MAX
 #	define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
-
-
-#define TYPE_CHECK_SIZE(name, size) \
-	_Static_assert(sizeof(name) == (size), "Size of " #name " != " #size)
-
-#define TYPE_CHECK_FIELD_OFFSET(name, member, offset) \
-	_Static_assert(offsetof(name, member) == (offset), "Offset of " #name "." #member " != " #offset)
-
-#define TYPE_CHECK_FIELD_SIZE(name, member, size) \
-	_Static_assert(sizeof(((name*)0)->member) == (size), "Size of " #name "." #member " != " #size)
 
 
 #define SCE_LNC_ERROR_APP_NOT_FOUND 0x80940031 // Usually happens if you to launch an app not in app.db
