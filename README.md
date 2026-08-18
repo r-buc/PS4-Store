@@ -64,9 +64,9 @@ auto_install=1 // auto install
 upon booting up the app will cache the database from the CDN in the settings.ini
 restart is required for changes made to the database (for now)
 
-- all images from jsons download to `/user/app/NPXS39041/storedata/`
-- PKG Download folder `/user/app/NPXS39041/downloads` (download folder is cleared every app launch, not yet installed pkgs are there)
-- Store log is at `/user/app/NPXS39041/logs/store.log`
+- all images from jsons download to `/user/app/RPIHBSTOR/storedata/`
+- PKG Download folder `/user/app/RPIHBSTOR/downloads` (download folder is cleared every app launch, not yet installed pkgs are there)
+- Store log is at `/user/app/RPIHBSTOR/logs/store.log`
 
 ## How does the Update section decide if a app has a update?
 

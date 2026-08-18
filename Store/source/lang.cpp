@@ -252,8 +252,8 @@ bool load_embdded_eng()
     //mem should already be allocated as this is the last opt
     int fd = -1;
     if (stropts.empty()) {
-        if (!if_exists("/user/app/NPXS39041/lang.ini")) {
-            if ((fd = open("/user/app/NPXS39041/lang.ini", O_WRONLY | O_CREAT | O_TRUNC, 0777)) > 0 && fd != -1) {
+        if (!if_exists("/user/app/RPIHBSTOR/lang.ini")) {
+            if ((fd = open("/user/app/RPIHBSTOR/lang.ini", O_WRONLY | O_CREAT | O_TRUNC, 0777)) > 0 && fd != -1) {
                 write(fd, lang_ini, lang_ini_sz);
                 close(fd);
             }
@@ -261,7 +261,7 @@ bool load_embdded_eng()
                return false;
         }
 
-        int error = ini_parse("/user/app/NPXS39041/lang.ini", load_lang_ini, nullptr);
+        int error = ini_parse("/user/app/RPIHBSTOR/lang.ini", load_lang_ini, nullptr);
         if (error) {
             log_error("Bad config file (first error on line %d)!", error);
             return false;

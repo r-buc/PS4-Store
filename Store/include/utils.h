@@ -135,7 +135,7 @@ typedef union SceNetCtlInfo {
 
 #define STORE_MAX_LIMIT_PAGES 1000
 #define STORE_PAGE_SIZE 15
-#define STORE_LOG "/user/app/NPXS39041/logs/store.log"
+#define STORE_LOG "/user/app/RPIHBSTOR/logs/store.log"
 #define STANDALONE_APP 0
 #define DAEMON_PATH "/system/vsh/app/ITEM00002"
 #define DAEMON_INI_DOESNT_EXIST 0

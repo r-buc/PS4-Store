@@ -22,7 +22,7 @@ void logshit(char* format, ...)
 
 	sceKernelDebugOutText(DGB_CHANNEL_TTYL, &buff[0]);
 
-	int fd = sceKernelOpen("/user/app/NPXS39041/logs/loader.log", O_WRONLY | O_CREAT | O_APPEND, 0777);
+	int fd = sceKernelOpen("/user/app/RPIHBSTOR/logs/loader.log", O_WRONLY | O_CREAT | O_APPEND, 0777);
 	if (fd >= 0)
 	{
 		sceKernelWrite(fd, &buff[0], strlen(&buff[0]));

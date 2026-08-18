@@ -218,13 +218,13 @@ bool update_version_by_hash(char* path)
 
 bool checkForUpdate(char *cdnbuf)
 {
-    unlink("/user/app/NPXS39041/homebrew.elf.sig");
+    unlink("/user/app/RPIHBSTOR/homebrew.elf.sig");
 
-	if (if_exists("/user/app/NPXS39041/homebrew.elf") && if_exists("/user/app/NPXS39041/local.md5"))
+	if (if_exists("/user/app/RPIHBSTOR/homebrew.elf") && if_exists("/user/app/RPIHBSTOR/local.md5"))
 	{
 		logshit("[STORE_GL_Loader:%s:%i] ----- ELF exists ---\n", __FUNCTION__, __LINE__);
 		logshit("[STORE_GL_Loader:%s:%i] ----- Comparing Hashs ---\n", __FUNCTION__, __LINE__);
-		int comp = MD5_hash_compare("/user/app/NPXS39041/remote.md5", "/user/app/NPXS39041/local.md5");
+		int comp = MD5_hash_compare("/user/app/RPIHBSTOR/remote.md5", "/user/app/RPIHBSTOR/local.md5");
 		if (comp == DIFFERENT_HASH)
              goto copy_update;
         else
@@ -240,15 +240,15 @@ bool checkForUpdate(char *cdnbuf)
 copy_update:
     msgok(getLangSTR(UPDATE_REQ));
 	progstart(getLangSTR(DOWNLOADING_UPDATE));
-	unlink("/user/app/NPXS39041/homebrew.elf");
-    unlink("/user/app/NPXS39041/local.md5");
+	unlink("/user/app/RPIHBSTOR/homebrew.elf");
+    unlink("/user/app/RPIHBSTOR/local.md5");
         
-     if(download_file(cdnbuf, "/user/app/NPXS39041/homebrew.elf") == 200)
+     if(download_file(cdnbuf, "/user/app/RPIHBSTOR/homebrew.elf") == 200)
      {
-	     if (copyFile("/user/app/NPXS39041/remote.md5", "/user/app/NPXS39041/local.md5") != 0)
+	     if (copyFile("/user/app/RPIHBSTOR/remote.md5", "/user/app/RPIHBSTOR/local.md5") != 0)
 			 return false;
 	     else{  
-		   unlink("/user/app/NPXS39041/remote.md5");
+		   unlink("/user/app/RPIHBSTOR/remote.md5");
 		   msgok(getLangSTR(UPDATE_APPLIED));
 		   return true;
 		 }
@@ -287,10 +287,10 @@ void loader_rooted(){
     char buff[600];
 
 	    logshit("======== HELLO FROM ROOTED LOADER ======\n");
-		mkdir("/user/app/NPXS39041/", 0777);
-		mkdir("/user/app/NPXS39041/storedata/", 0777);
-		mkdir("/user/app/NPXS39041/logs/", 0777);
-		unlink("/user/app/NPXS39041/logs/loader.log");
+		mkdir("/user/app/RPIHBSTOR/", 0777);
+		mkdir("/user/app/RPIHBSTOR/storedata/", 0777);
+		mkdir("/user/app/RPIHBSTOR/logs/", 0777);
+		unlink("/user/app/RPIHBSTOR/logs/loader.log");
 		
 
 		logshit("[STORE_GL_Loader:%s:%i] -----  All Internal Modules Loaded  -----\n", __FUNCTION__, __LINE__);
@@ -313,21 +313,21 @@ void loader_rooted(){
 			else {
 
 				if (config.Copy_INI)
-					copyFile("/mnt/usb0/settings.ini", "/user/app/NPXS39041/settings.ini");
+					copyFile("/mnt/usb0/settings.ini", "/user/app/RPIHBSTOR/settings.ini");
 			}
 
 			logshit("[STORE_GL_Loader:%s:%i] ----- USB INI CDN: %s Secure Boot: %i ---\n", __FUNCTION__, __LINE__, config.opt[CDN_URL], config.SECURE_BOOT);
 		} 
         else
         {
-		    if (!if_exists("/user/app/NPXS39041/settings.ini"))
+		    if (!if_exists("/user/app/RPIHBSTOR/settings.ini"))
 		    {
 				logshit("[STORE_GL_Loader:%s:%i] ----- APP INI Not Found, Making ini ---\n", __FUNCTION__, __LINE__);
 
 				memset(&buff[0], 0, sizeof buff);
-				snprintf(&buff[0], sizeof buff, "[Settings]\nCDN=https://api.pkg-zone.com\nSecure_Boot=1\ntemppath=/user/app/NPXS39041/downloads\nStoreOnUSB=0\nShow_install_prog=1\nHomeMenu_Redirection=0\nDaemon_on_start=1\nLegacy=0\n");
+				snprintf(&buff[0], sizeof buff, "[Settings]\nCDN=https://api.pkg-zone.com\nSecure_Boot=1\ntemppath=/user/app/RPIHBSTOR/downloads\nStoreOnUSB=0\nShow_install_prog=1\nHomeMenu_Redirection=0\nDaemon_on_start=1\nLegacy=0\n");
 
-				int fd = open("/user/app/NPXS39041/settings.ini", O_WRONLY | O_CREAT | O_TRUNC, 0777);
+				int fd = open("/user/app/RPIHBSTOR/settings.ini", O_WRONLY | O_CREAT | O_TRUNC, 0777);
 				if (fd >= 0)
 				{
 					write(fd, &buff[0], strlen(&buff[0]));
@@ -336,14 +336,14 @@ void loader_rooted(){
 				else
 					logshit("Could not make create INI File");
 
-				mkdir("/user/app/NPXS39041/downloads", 0777);
+				mkdir("/user/app/RPIHBSTOR/downloads", 0777);
 				config.SECURE_BOOT = true;
 
 		    }			
 		    else
 		    {
 				logshit("[STORE_GL_Loader:%s:%i] ----- INI FOUND ---\n", __FUNCTION__, __LINE__);
-				int error = ini_parse("/user/app/NPXS39041/settings.ini", print_ini_info, &config);
+				int error = ini_parse("/user/app/RPIHBSTOR/settings.ini", print_ini_info, &config);
 				if (error) {
 					printf("Bad config file (first error on line %d)!\n", error);
 				}
@@ -365,7 +365,7 @@ void loader_rooted(){
 
 			sceMsgDialogTerminate();
 
-			if ((dl_ret = download_file(cdnbuf, "/user/app/NPXS39041/remote.md5")) == 200){
+			if ((dl_ret = download_file(cdnbuf, "/user/app/RPIHBSTOR/remote.md5")) == 200){
 				logshit("[STORE_GL_Loader:%s:%i] ----- Downloaded remote.md5 ---\n", __FUNCTION__, __LINE__);
 				if (VerifyRSA)
 				{
@@ -383,7 +383,7 @@ void loader_rooted(){
 							logshit("[STORE_GL_Loader:%s:%i] ----- Secure Boot is ENABLED ---\n", __FUNCTION__, __LINE__);
 							logshit("[STORE_GL_Loader:%s:%i] ----- Checking Revocation list..... ---\n", __FUNCTION__, __LINE__);
 
-							if (update_version_by_hash("/user/app/NPXS39041/homebrew.elf"))
+							if (update_version_by_hash("/user/app/RPIHBSTOR/homebrew.elf"))
 								logshit("[STORE_GL_Loader:%s:%i] ----- Update is NOT part of the revoked listed ---\n", __FUNCTION__, __LINE__);
 							else{
                                 msgok("%s\n\n%s", getLangSTR(LOADER_FATAL),getLangSTR(SWU_ERROR));
@@ -392,18 +392,18 @@ void loader_rooted(){
 
 
 							logshit("[STORE_GL_Loader:%s:%i] ----- Downloading RSA Sig CDN: %s ---\n", __FUNCTION__, __LINE__, cdnbuf);
-							if (download_file(cdnbuf, "/user/app/NPXS39041/homebrew.elf.sig") == 200)
+							if (download_file(cdnbuf, "/user/app/RPIHBSTOR/homebrew.elf.sig") == 200)
 							{
 								loadmsg(getLangSTR(RSA_LOAD));
 
 								logshit("VerifyRSA resolved from PRX\n");
 
-								if ((ret = VerifyRSA("/user/app/NPXS39041/homebrew.elf", "/mnt/sandbox/NPXS39041_000/app0/Media/rsa.pub")) != 0){
+								if ((ret = VerifyRSA("/user/app/RPIHBSTOR/homebrew.elf", "/mnt/sandbox/RPIHBSTOR_000/app0/Media/rsa.pub")) != 0){
 								   msgok("%s\n\n%s: %x\n", getLangSTR(LOADER_FATAL),getLangSTR(RSA_FAILED),ret);
-								   unlink("/user/app/NPXS39041/homebrew.elf");
-								   unlink("/user/app/NPXS39041/homebrew.elf.sig");
-								   unlink("/user/app/NPXS39041/remote.md5");
-								   unlink("/user/app/NPXS39041/local.md5");
+								   unlink("/user/app/RPIHBSTOR/homebrew.elf");
+								   unlink("/user/app/RPIHBSTOR/homebrew.elf.sig");
+								   unlink("/user/app/RPIHBSTOR/remote.md5");
+								   unlink("/user/app/RPIHBSTOR/local.md5");
 								   goto exit_sec;
 								}
 								else{
@@ -418,7 +418,7 @@ void loader_rooted(){
 							}
 						}
 
-						if (copyFile("/user/app/NPXS39041/homebrew.elf", "/data/self/Store.self") != 0) 
+						if (copyFile("/user/app/RPIHBSTOR/homebrew.elf", "/data/self/Store.self") != 0) 
 						    goto err;
 						else
 						   return;
