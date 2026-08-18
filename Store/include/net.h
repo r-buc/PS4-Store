@@ -26,6 +26,7 @@ typedef enum token_name
 	VIDEO_LINK,
 	TWITTER_LINK,
 	PKG_MD5_HASH,
+	CONTENT_ID,
 	TOTAL_NUM_OF_TOKENS,
 	// should match NUM_OF_USER_TOKENS
 } token_name;
@@ -54,6 +55,15 @@ static const char* used_token[] =
 	"video",
 	"twitter",
 	"md5",
+	/*
+	 * Optional column. Populated by CDN servers that store the full PS4
+	 * content ID (e.g. "IV0002-CUSA00000_00-XXXXXXXXXXXXXXXX") for each
+	 * entry, matching the format `struct pkg_content_id` in the pkg header
+	 * (see flatz/ps4_remote_pkg_installer's pkg.h / pkg_parse_content_id).
+	 * If the DB doesn't provide this column, it resolves to an empty
+	 * string and pkginstall_remote() falls back to the previous behavior.
+	 */
+	"content_id",
 };
 
 #define NUM_OF_USER_TOKENS  (sizeof(used_token) / sizeof(used_token[0]))

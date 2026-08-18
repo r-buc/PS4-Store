@@ -39,6 +39,7 @@ enum bgft_task_option_t {
     BGFT_TASK_OPTION_COPY_CRASH_REPORT_FILES = 0x20,
     BGFT_TASK_OPTION_DISABLE_INSERT_POPUP = 0x40,
     BGFT_TASK_OPTION_DISABLE_CDN_QUERY_PARAM = 0x10000,
+
 };
 
 struct bgft_download_param {
@@ -148,6 +149,10 @@ typedef int SceBgftTaskId;
 #define PKG_CONTENT_FLAGS_CUMULATIVE_PATCH 0x60000000
 #define SIZEOF_PKG_HEADER 0x2000
 
+/* BGFT task registration error codes */
+#define SCE_BGFT_ERROR_ALREADY_REGISTERED 0x80990088
+#define SCE_BGFT_ERROR_ALREADY_INSTALLED  0x80990015
+
 TYPE_BEGIN(struct pkg_header, SIZEOF_PKG_HEADER);
 TYPE_FIELD(uint8_t magic[4], 0x00);
 TYPE_FIELD(uint32_t entry_count, 0x10);
@@ -161,6 +166,8 @@ TYPE_FIELD(uint8_t digest[PKG_DIGEST_SIZE], 0xFE0);
 TYPE_END();
 TYPE_CHECK_SIZE(struct pkg_header, SIZEOF_PKG_HEADER);
 
+
+uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install);
 
 bool app_inst_util_is_exists(const char* title_id, bool* exists);
 extern "C"{
@@ -189,7 +196,10 @@ int sceAppInstUtilAppUnInstall(const char* title_id);
 int sceAppInstUtilAppGetSize(const char* title_id, uint64_t* buf);
 int sceBgftServiceInit(struct bgft_init_params*  params);
 int sceBgftServiceIntDownloadRegisterTaskByStorageEx(struct bgft_download_param_ex* params, int* task_id);
+int sceBgftServiceIntDownloadRegisterTask(struct bgft_download_param* params, int* task_id);
+int sceBgftServiceIntDebugDownloadRegisterPkg(struct bgft_download_param* params, int* task_id);
 int sceBgftServiceDownloadStartTask(int task_id);
 int sceBgftServiceTerm(void);
+int sceUserServiceGetForegroundUser(int* user_id);
 }
 uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install);

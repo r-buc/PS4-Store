@@ -319,13 +319,17 @@ void *start_routine2( void *arg )
 
 
     int ret = -1;
+#ifdef __ORBIS__
+    /* Install directly from the remote URL via BGFT — no local download needed */
+    i->status = RUNNING;
+    ret = pkginstall_remote(i->url.c_str(), i, set.auto_install.load());
+    if (ret != 0)
+        i->status = ret;
+#else
     if((ret = dl_from_url_v3_threaded(i->url, i->dst, i)) == 0)
     {
       i->last_off = 0;
       if (set.auto_install.load()) {
-#ifdef __ORBIS__
-        return (void*)pkginstall(i->dst.c_str(), i, set.auto_install.load());
-#else
         log_error("[StoreCore][HTTP] Installed PKG %s", i->dst.c_str());
         unlink(i->dst.c_str());
         i->progress = 0.f;
@@ -356,8 +360,6 @@ void *start_routine2( void *arg )
         icon_panel->mtx.unlock();
         i->g_idx = -1;
         i->status = READY;
-        
-#endif
       }
       else
           i->status = COMPLETED;
@@ -365,6 +367,7 @@ void *start_routine2( void *arg )
     }
     else
         i->status = ret;
+#endif
 
     // trigger refresh of Queue active count
     left_panel2->vbo_s = ASK_REFRESH;

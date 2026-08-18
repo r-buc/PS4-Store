@@ -167,8 +167,16 @@ int sql_index_tokens(std::shared_ptr<layout_t>  &l, int count)
             int stepResult = sqlite3_step(stmt);
             if (stepResult == SQLITE_ROW) {
                 for (int j = 0; j < static_cast<int>(TOTAL_NUM_OF_TOKENS); j++) {
-                    int colIndex = columnIndexMap[used_token[j]];
-                    const char* columnText = reinterpret_cast<const char*>(sqlite3_column_text(stmt, colIndex));
+                    auto colIt = columnIndexMap.find(used_token[j]);
+                    if (colIt == columnIndexMap.end()) {
+                        /* Column not present in this DB (e.g. older CDN
+                         * schema missing a newly-added optional field such
+                         * as "content_id") — leave the token empty rather
+                         * than misreading an unrelated column. */
+                        l->item_d[idx].token_d[j].off = std::string();
+                        continue;
+                    }
+                    const char* columnText = reinterpret_cast<const char*>(sqlite3_column_text(stmt, colIt->second));
                     l->item_d[idx].token_d[j].off = columnText ? std::string(columnText) : std::string();
                     //log_info("columnText: %s", columnText);
                 }
