@@ -270,16 +270,23 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
      * the store DB by sql_index_tokens().  Use it directly — no extra HTTP
      * range-request to read the PKG header is needed.
      *
-     *   ID      -> title_id (e.g. "CUSA00000")
-     *   NAME    -> human-readable package name
-     *   SIZE    -> package size (numeric bytes string in the DB, or falls back
-     *              to the HTTP content-length already fetched by ini_dl_req)
-     *   APPTYPE -> "Base Game" / "Update" / "DLC" — used for patch routing
+     *   ID         -> title_id (e.g. "CUSA00000")
+     *   NAME       -> human-readable package name
+     *   SIZE       -> package size (numeric bytes string in the DB, or falls
+     *                 back to the HTTP content-length already fetched by
+     *                 ini_dl_req)
+     *   APPTYPE    -> "Base Game" / "Update" / "DLC" — used for patch routing
+     *   CONTENT_ID -> full PS4 content ID (e.g.
+     *                 "IV0002-CUSA00000_00-XXXXXXXXXXXXXXXX"), optional —
+     *                 only present when the CDN's DB schema provides a
+     *                 "content_id" column. Falls back to "" (matching prior
+     *                 behavior) when absent.
      */
     const std::string& title_id   = ta->token_d[ID].off;
     const std::string& name       = ta->token_d[NAME].off;
     const std::string& size_str   = ta->token_d[SIZE].off;
     const std::string& apptype    = ta->token_d[APPTYPE].off;
+    const std::string& content_id = ta->token_d[CONTENT_ID].off;
 
     if (title_id.empty()) {
         log_error("pkginstall_remote: title_id is empty — token_d not populated?");
@@ -330,7 +337,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     memset(&download_params, 0, sizeof(download_params));
     download_params.param.user_id            = user_id;
     download_params.param.entitlement_type   = 5;
-    download_params.param.id                 = "";
+    download_params.param.id                 = !content_id.empty() ? content_id.c_str() : "";
     download_params.param.content_url        = pkg_url;
     download_params.param.content_name       = buffer;
     download_params.param.icon_path          = icon_path;
@@ -347,7 +354,11 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
         while (true) {
             log_info("%s: registering task (is_patch=%d)", __FUNCTION__, (int)is_patch);
             if (!is_patch) {
-                ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
+                /* Matches flatz/ps4_remote_pkg_installer's
+                 * bgft_download_register_package_task(): register directly
+                 * via sceBgftDownloadRegisterTask(), rather than the
+                 * internal storage-Ex variant, for non-patch remote PKGs. */
+                ret = sceBgftDownloadRegisterTask(&download_params.param, &task_id);
             } else {
                 ret = sceBgftDebugDownloadRegisterPkg(&download_params.param, &task_id);
             }

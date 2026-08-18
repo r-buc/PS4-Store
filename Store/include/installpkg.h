@@ -196,6 +196,7 @@ int sceAppInstUtilAppUnInstall(const char* title_id);
 int sceAppInstUtilAppGetSize(const char* title_id, uint64_t* buf);
 int sceBgftServiceInit(struct bgft_init_params*  params);
 int sceBgftServiceIntDownloadRegisterTaskByStorageEx(struct bgft_download_param_ex* params, int* task_id);
+int sceBgftDownloadRegisterTask(struct bgft_download_param* params, int* task_id);
 int sceBgftDebugDownloadRegisterPkg(struct bgft_download_param* params, int* task_id);
 int sceBgftServiceDownloadStartTask(int task_id);
 int sceBgftServiceTerm(void);
