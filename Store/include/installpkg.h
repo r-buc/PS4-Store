@@ -39,6 +39,7 @@ enum bgft_task_option_t {
     BGFT_TASK_OPTION_COPY_CRASH_REPORT_FILES = 0x20,
     BGFT_TASK_OPTION_DISABLE_INSERT_POPUP = 0x40,
     BGFT_TASK_OPTION_DISABLE_CDN_QUERY_PARAM = 0x10000,
+
 };
 
 struct bgft_download_param {
@@ -191,7 +192,9 @@ int sceAppInstUtilAppUnInstall(const char* title_id);
 int sceAppInstUtilAppGetSize(const char* title_id, uint64_t* buf);
 int sceBgftServiceInit(struct bgft_init_params*  params);
 int sceBgftServiceIntDownloadRegisterTaskByStorageEx(struct bgft_download_param_ex* params, int* task_id);
+int sceBgftDebugDownloadRegisterPkg(struct bgft_download_param* params, int* task_id);
 int sceBgftServiceDownloadStartTask(int task_id);
 int sceBgftServiceTerm(void);
+int sceUserServiceGetForegroundUser(int* user_id);
 }
 uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install);

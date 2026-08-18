@@ -270,14 +270,16 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
      * the store DB by sql_index_tokens().  Use it directly — no extra HTTP
      * range-request to read the PKG header is needed.
      *
-     *   ID    -> title_id (e.g. "CUSA00000")
-     *   NAME  -> human-readable package name
-     *   SIZE  -> package size (numeric bytes string in the DB, or falls back
-     *            to the HTTP content-length already fetched by ini_dl_req)
+     *   ID      -> title_id (e.g. "CUSA00000")
+     *   NAME    -> human-readable package name
+     *   SIZE    -> package size (numeric bytes string in the DB, or falls back
+     *              to the HTTP content-length already fetched by ini_dl_req)
+     *   APPTYPE -> "Base Game" / "Update" / "DLC" — used for patch routing
      */
     const std::string& title_id   = ta->token_d[ID].off;
     const std::string& name       = ta->token_d[NAME].off;
     const std::string& size_str   = ta->token_d[SIZE].off;
+    const std::string& apptype    = ta->token_d[APPTYPE].off;
 
     if (title_id.empty()) {
         log_error("pkginstall_remote: title_id is empty — token_d not populated?");
@@ -304,6 +306,14 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     if (!bgft_init())
         return PKG_ERROR("BGFT_initialization", ret, ta);
 
+    /* Foreground user — required by BGFT */
+    int user_id = 0;
+    ret = sceUserServiceGetForegroundUser(&user_id);
+    if (ret) {
+        log_error("sceUserServiceGetForegroundUser failed: 0x%08X", ret);
+        return PKG_ERROR("sceUserServiceGetForegroundUser", ret, ta);
+    }
+
     const std::string content_name = (!name.empty() ? name : title_id) + " via Store";
     snprintf(buffer, sizeof(buffer) - 1, "%s", content_name.c_str());
     log_info("%s", buffer);
@@ -313,34 +323,44 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
         ? picpath_str.c_str()
         : "/update/fakepic.png";
 
+    /* "Update" apptype means this is a patch PKG */
+    const bool is_patch = (apptype == "Update");
+
     struct bgft_download_param_ex download_params;
     memset(&download_params, 0, sizeof(download_params));
-    download_params.param.entitlement_type  = 5;
-    download_params.param.id                = "";
-    download_params.param.content_url       = pkg_url;
-    download_params.param.content_name      = buffer;
-    download_params.param.icon_path         = icon_path;
+    download_params.param.user_id            = user_id;
+    download_params.param.entitlement_type   = 5;
+    download_params.param.id                 = "";
+    download_params.param.content_url        = pkg_url;
+    download_params.param.content_name       = buffer;
+    download_params.param.icon_path          = icon_path;
     download_params.param.playgo_scenario_id = "0";
-    download_params.param.option            = BGFT_TASK_OPTION_INVISIBLE;
-    download_params.param.package_size      = pkg_size;
-    download_params.slot                    = 0;
+    download_params.param.option             = BGFT_TASK_OPTION_DISABLE_CDN_QUERY_PARAM;
+    download_params.param.package_type       = "PS4";
+    download_params.param.package_sub_type   = "";
+    download_params.param.package_size       = pkg_size;
+    download_params.slot                     = 0;
 
     {
         int retry = 0;
         const int MAX_RETRIES = 2;
         while (true) {
-            log_info("%s 1", __FUNCTION__);
-            ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
+            log_info("%s: registering task (is_patch=%d)", __FUNCTION__, (int)is_patch);
+            if (!is_patch) {
+                ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
+            } else {
+                ret = sceBgftDebugDownloadRegisterPkg(&download_params.param, &task_id);
+            }
             if (ret == 0x80990088 || ret == 0x80990015) {
                 if (++retry > MAX_RETRIES)
-                    return PKG_ERROR("sceBgftServiceIntDownloadRegisterTaskByStorageEx (retry limit)", ret, ta);
+                    return PKG_ERROR("sceBgftRegisterTask (retry limit)", ret, ta);
                 ret = sceAppInstUtilAppUnInstall(title_id.c_str());
                 if (ret != 0)
                     return PKG_ERROR("sceAppInstUtilAppUnInstall", ret, ta);
                 continue;
             }
             else if (ret)
-                return PKG_ERROR("sceBgftServiceIntDownloadRegisterTaskByStorageEx", ret, ta);
+                return PKG_ERROR("sceBgftRegisterTask", ret, ta);
             break;
         }
     }
@@ -523,6 +543,13 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
         if (ret) 
             return PKG_ERROR("sceAppInstUtilGetTitleIdFromPkg", ret, ta);
 
+        /* Foreground user — required by BGFT */
+        int user_id = 0;
+        ret = sceUserServiceGetForegroundUser(&user_id);
+        if (ret) {
+            log_error("sceUserServiceGetForegroundUser failed: 0x%08X", ret);
+            return PKG_ERROR("sceUserServiceGetForegroundUser", ret, ta);
+        }
 
         snprintf(buffer, 254, "%s via Store", title_id);
         log_info( "%s", buffer);
@@ -532,21 +559,30 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
             ? picpath_str.c_str()
             : "/update/fakepic.png";
 
+        /* Detect patch by reading the local PKG header */
+        const bool is_patch = pkg_is_patch(fullpath);
+
         struct bgft_download_param_ex download_params;
         memset(&download_params, 0, sizeof(download_params));
-        download_params.param.entitlement_type = 5;
-        download_params.param.id = "";
-        download_params.param.content_url = fullpath;
-        download_params.param.content_name = buffer;
-        download_params.param.icon_path = icon_path;
+        download_params.param.user_id            = user_id;
+        download_params.param.entitlement_type   = 5;
+        download_params.param.id                 = "";
+        download_params.param.content_url        = fullpath;
+        download_params.param.content_name       = buffer;
+        download_params.param.icon_path          = icon_path;
         download_params.param.playgo_scenario_id = "0";
-        download_params.param.option = BGFT_TASK_OPTION_INVISIBLE;
-
-        download_params.slot = 0;
+        download_params.param.option             = BGFT_TASK_OPTION_DISABLE_CDN_QUERY_PARAM;
+        download_params.param.package_type       = "PS4";
+        download_params.param.package_sub_type   = "";
+        download_params.slot                     = 0;
 
     retry:
-        log_info("%s 1", __FUNCTION__);
-        ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
+        log_info("%s: registering task (is_patch=%d)", __FUNCTION__, (int)is_patch);
+        if (!is_patch) {
+            ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
+        } else {
+            ret = sceBgftDebugDownloadRegisterPkg(&download_params.param, &task_id);
+        }
         if(ret == 0x80990088 || ret == 0x80990015)
         {
             ret = sceAppInstUtilAppUnInstall(&title_id[0]);
@@ -557,7 +593,7 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
 
         }
         else if(ret) 
-            return PKG_ERROR("sceBgftServiceIntDownloadRegisterTaskByStorageEx", ret, ta);
+            return PKG_ERROR("sceBgftRegisterTask", ret, ta);
         
 
         log_info("Task ID(s): 0x%08X", task_id);
