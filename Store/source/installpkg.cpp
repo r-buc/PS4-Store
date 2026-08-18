@@ -403,24 +403,27 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     download_params.param.package_size      = (unsigned long)rinfo.package_size;
     download_params.slot                    = 0;
 
-retry_remote:
-    log_info("%s 1", __FUNCTION__);
-    ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
-    if (ret == 0x80990088 || ret == 0x80990015)
     {
-        ret = sceAppInstUtilAppUnInstall(rinfo.title_id);
-        if (ret != 0)
-            return PKG_ERROR("sceAppInstUtilAppUnInstall", ret, ta);
-        goto retry_remote;
+        int retry = 0;
+        const int MAX_RETRIES = 2;
+        while (true) {
+            log_info("%s 1", __FUNCTION__);
+            ret = sceBgftServiceIntDownloadRegisterTaskByStorageEx(&download_params, &task_id);
+            if (ret == 0x80990088 || ret == 0x80990015) {
+                if (++retry > MAX_RETRIES)
+                    return PKG_ERROR("sceBgftServiceIntDownloadRegisterTaskByStorageEx (retry limit)", ret, ta);
+                ret = sceAppInstUtilAppUnInstall(rinfo.title_id);
+                if (ret != 0)
+                    return PKG_ERROR("sceAppInstUtilAppUnInstall", ret, ta);
+                continue;
+            }
+            else if (ret)
+                return PKG_ERROR("sceBgftServiceIntDownloadRegisterTaskByStorageEx", ret, ta);
+            break;
+        }
     }
-    else if (ret)
-        return PKG_ERROR("sceBgftServiceIntDownloadRegisterTaskByStorageEx", ret, ta);
 
     log_info("Task ID(s): 0x%08X", task_id);
-
-    ret = sceBgftServiceDownloadStartTask(task_id);
-    if (ret)
-        return PKG_ERROR("sceBgftDownloadStartTask", ret, ta);
 
     struct install_args* args = new install_args;
     args->title_id  = rinfo.title_id;
@@ -431,16 +434,21 @@ retry_remote:
     args->delete_pkg = false; /* nothing to delete on disk */
 
     if (Auto_install) {
-        install_prog((void*)args);
+        ret = sceBgftServiceDownloadStartTask(task_id);
+        if (ret) { delete args; return PKG_ERROR("sceBgftDownloadStartTask", ret, ta); }
+        install_prog((void*)args); /* install_prog deletes args */
     }
     else if (set.Legacy_Install.load()) {
+        ret = sceBgftServiceDownloadStartTask(task_id);
+        if (ret) { delete args; return PKG_ERROR("sceBgftDownloadStartTask", ret, ta); }
         pthread_t thread = 0;
-        ret = pthread_create(&thread, NULL, install_prog, (void*)args);
+        ret = pthread_create(&thread, NULL, install_prog, (void*)args); /* install_prog deletes args */
         log_debug("pthread_create for %x, ret:%d", task_id, ret);
     }
     else {
-        ret = sceBgftServiceDownloadStartTask(args->task_id);
+        ret = sceBgftServiceDownloadStartTask(task_id);
         if (ret) {
+            delete args;
             return PKG_ERROR("sceBgftServiceDownloadStartTask", ret, ta);
         } else {
             if (icon_panel && !icon_panel->item_d[args->l->g_idx].token_d[ID].off.empty()) {
@@ -452,6 +460,7 @@ retry_remote:
             ta->status = READY;
             layout_refresh_VBOs();
             log_info("package successfully started in the background");
+            delete args;
         }
     }
 
