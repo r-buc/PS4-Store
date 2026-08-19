@@ -279,14 +279,16 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
      *   CONTENT_ID -> full PS4 content ID (e.g.
      *                 "IV0002-CUSA00000_00-XXXXXXXXXXXXXXXX"), optional —
      *                 only present when the CDN's DB schema provides a
-     *                 "content_id" column. Falls back to "" (matching prior
-     *                 behavior) when absent.
+     *                 "content_id" column. Falls back to NULL when absent.
      */
     const std::string& title_id   = ta->token_d[ID].off;
     const std::string& name       = ta->token_d[NAME].off;
     const std::string& size_str   = ta->token_d[SIZE].off;
     const std::string& apptype    = ta->token_d[APPTYPE].off;
     const std::string& content_id = ta->token_d[CONTENT_ID].off;
+    /* BGFT rejects "" as an invalid Content ID format (CE-32957-6).
+     * When the CDN does not supply a content_id we pass NULL so the
+     * system does not attempt to validate the field. */
 
     if (title_id.empty()) {
         log_error("pkginstall_remote: title_id is empty — token_d not populated?");
@@ -337,7 +339,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     memset(&download_params, 0, sizeof(download_params));
     download_params.param.user_id            = user_id;
     download_params.param.entitlement_type   = 5;
-    download_params.param.id                 = !content_id.empty() ? content_id.c_str() : "";
+    download_params.param.id                 = !content_id.empty() ? content_id.c_str() : NULL;
     download_params.param.content_url        = pkg_url;
     download_params.param.content_name       = buffer;
     download_params.param.icon_path          = icon_path;
@@ -580,14 +582,29 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
             ? picpath_str.c_str()
             : "/update/fakepic.png";
 
-        /* Detect patch by reading the local PKG header */
+        /* Read PKG header once: derive content_id and patch flag together */
+        struct pkg_header local_hdr;
+        memset(&local_hdr, 0, sizeof(local_hdr));
+        {
+            int pkg_fd = sceKernelOpen(fullpath, O_RDONLY, 0);
+            if (pkg_fd >= 0) {
+                sceKernelRead(pkg_fd, &local_hdr, sizeof(local_hdr));
+                sceKernelClose(pkg_fd);
+            }
+        }
+
         const bool is_patch = pkg_is_patch(fullpath);
+
+        /* content_id in the PKG header; NULL if the header could not be read
+         * or the field is empty — BGFT rejects "" as an invalid format. */
+        const char* pkg_content_id =
+            (local_hdr.content_id[0] != '\0') ? local_hdr.content_id : NULL;
 
         struct bgft_download_param_ex download_params;
         memset(&download_params, 0, sizeof(download_params));
         download_params.param.user_id            = user_id;
         download_params.param.entitlement_type   = 5;
-        download_params.param.id                 = "";
+        download_params.param.id                 = pkg_content_id;
         download_params.param.content_url        = fullpath;
         download_params.param.content_name       = buffer;
         download_params.param.icon_path          = icon_path;
