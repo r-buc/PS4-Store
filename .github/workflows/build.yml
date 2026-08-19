@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -46,3 +46,12 @@ jobs:
       with:
         name: PS4-Store-PKG
         path: Store/Store-R2.pkg
+
+    - name: Publish latest release
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: latest
+        name: Latest Build
+        prerelease: true
+        files: Store/Store-R2.pkg
