@@ -50,3 +50,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Generated param.sfo (built by Makefile via PkgTool.Core)
+sce_sys/param.sfo

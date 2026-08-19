@@ -15,7 +15,7 @@
   </volume>
   <files img_no="0">
     <file targ_path="sce_sys/icon0.png" orig_path="../App Media-Assets/sce_sys/icon0.png" />
-    <file targ_path="sce_sys/param.sfo" orig_path="../App Media-Assets/sce_sys/param.sfo" />
+    <file targ_path="sce_sys/param.sfo" orig_path="sce_sys/param.sfo" />
     <file targ_path="assets/fonts/HelveticaWorld-Multi.ttf" orig_path="../App Media-Assets/assets/fonts/HelveticaWorld-Multi.ttf" />
     <file targ_path="assets/fonts/NotoSansJP-Regular.ttf" orig_path="../App Media-Assets/assets/fonts/NotoSansJP-Regular.ttf" />
     <file targ_path="assets/fonts/NotoSansKR-Regular.ttf" orig_path="../App Media-Assets/assets/fonts/NotoSansKR-Regular.ttf" />
