@@ -264,7 +264,7 @@ typedef struct
 	std::string strings[LANG_NUM_OF_STRINGS];
 } LangStrings;
 
-#define LANG_DIR "/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/langs/"
+#define LANG_DIR "/mnt/sandbox/pfsmnt/RPIH00001-app0/langs/"
 
 //#define LANG_DIR "/data/%i/lang.ini"
 //#define OVERRIDE_LANG 3 // 0 JAP

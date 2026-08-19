@@ -50,3 +50,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Generated at build time by Store/Makefile (PkgTool.Core sfo_new/sfo_setentry)
+# from the TITLE_ID/CONTENT_ID variables; never commit this binary so a stale
+# copy can't mask future title id changes.
+Store/sce_sys/param.sfo

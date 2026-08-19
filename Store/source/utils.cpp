@@ -298,7 +298,7 @@ bool LoadOptions()
     set.Legacy_Install = false;
     set.auto_load_cache = true;
     unsafe_source = false;
-    set.opt[TMP_PATH] =  "/user/app/RPIHBSTOR/downloads";
+    set.opt[TMP_PATH] =  "/user/app/RPIH00001/downloads";
     set.opt[FNT_PATH] = "/system_ex/app/NPXS20113/bdjstack/lib/fonts/SCE-PS3-RD-R-LATIN.TTF";
 
     /* Initialize INI structure */
@@ -309,9 +309,9 @@ bool LoadOptions()
         if (!if_exists(buf.c_str()))
         {
             log_warn( "No INI on USB");
-            if (if_exists("/user/app/RPIHBSTOR/settings.ini")) {
-                set.opt[INI_PATH] = "/user/app/RPIHBSTOR/settings.ini";
-                error = ini_parse("/user/app/RPIHBSTOR/settings.ini", print_ini_info, NULL);
+            if (if_exists("/user/app/RPIH00001/settings.ini")) {
+                set.opt[INI_PATH] = "/user/app/RPIH00001/settings.ini";
+                error = ini_parse("/user/app/RPIH00001/settings.ini", print_ini_info, NULL);
                 if (error) log_error("Bad config file (first error on line %d)!\n", error);
             }
 
@@ -322,14 +322,14 @@ bool LoadOptions()
             set.opt[INI_PATH] = fmt::format("/mnt/usb{}/settings.ini", usb_num);
         }
     }
-    else if (!if_exists("/user/app/RPIHBSTOR/settings.ini"))
+    else if (!if_exists("/user/app/RPIH00001/settings.ini"))
     {
         log_error("CANT FIND INI"); no_error = false;
     } else {
-        error = ini_parse("/user/app/RPIHBSTOR/settings.ini", print_ini_info, NULL);
+        error = ini_parse("/user/app/RPIH00001/settings.ini", print_ini_info, NULL);
         if (error) log_error("Bad config file (first error on line %d)!\n", error);
         log_info( "Loading ini from APP DIR");
-        set.opt[INI_PATH] = "/user/app/RPIHBSTOR/settings.ini";
+        set.opt[INI_PATH] = "/user/app/RPIH00001/settings.ini";
     }
     
     unsafe_source = is_source_unsafe(set.opt[CDN_URL]);
@@ -372,30 +372,30 @@ bool LoadOptions()
 
         switch (lang) {
         case 0: //jAPN IS GREAT
-            //strcpy(set.opt[FNT_PATH], "/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/assets/fonts/NotoSansJP-Regular.ttf");
-            set.opt[FNT_PATH] = "/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/assets/fonts/NotoSansJP-Regular.ttf";
+            //strcpy(set.opt[FNT_PATH], "/mnt/sandbox/pfsmnt/RPIH00001-app0/assets/fonts/NotoSansJP-Regular.ttf");
+            set.opt[FNT_PATH] = "/mnt/sandbox/pfsmnt/RPIH00001-app0/assets/fonts/NotoSansJP-Regular.ttf";
             break;
         case 9:///THIS IS FOR JOON, IF HE COMES BACK
-            set.opt[FNT_PATH] = "/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/assets/fonts/NotoSansKR-Regular.ttf";
+            set.opt[FNT_PATH] = "/mnt/sandbox/pfsmnt/RPIH00001-app0/assets/fonts/NotoSansKR-Regular.ttf";
             break;
         case 21:
         case 23:
         case 24:
         case 25:
         case 26:
-            //strcpy(set.opt[FNT_PATH], "/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/assets/fonts/HelveticaWorld-Multi.ttf");
-            set.opt[FNT_PATH] = "/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/assets/fonts/HelveticaWorld-Multi.ttf";
+            //strcpy(set.opt[FNT_PATH], "/mnt/sandbox/pfsmnt/RPIH00001-app0/assets/fonts/HelveticaWorld-Multi.ttf");
+            set.opt[FNT_PATH] = "/mnt/sandbox/pfsmnt/RPIH00001-app0/assets/fonts/HelveticaWorld-Multi.ttf";
             break;
             //NO USERS HAS TRANSLATED THE FOLLOWING LANGS, SO I DELETED THEM OUT THE PKG TO SAVE SPACE
             /*
             case 10:
-                strcpy(set.opt[FNT_PATH],"/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/assets/fonts/NotoSansTC-Regular.ttf");
+                strcpy(set.opt[FNT_PATH],"/mnt/sandbox/pfsmnt/RPIH00001-app0/assets/fonts/NotoSansTC-Regular.ttf");
                 break;
             case 11:
-                strcpy(set.opt[FNT_PATH],"/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/assets/fonts/NotoSansSC-Regular.ttf");
+                strcpy(set.opt[FNT_PATH],"/mnt/sandbox/pfsmnt/RPIH00001-app0/assets/fonts/NotoSansSC-Regular.ttf");
                 break;
             case 27:
-                strcpy(set.opt[FNT_PATH],"/mnt/sandbox/pfsmnt/RPIHBSTOR-app0/assets/fonts/NotoSansThai-Regular.ttf");
+                strcpy(set.opt[FNT_PATH],"/mnt/sandbox/pfsmnt/RPIH00001-app0/assets/fonts/NotoSansThai-Regular.ttf");
                 break;*/
         default:
             break;

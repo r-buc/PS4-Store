@@ -298,10 +298,10 @@ void GLES2_scene_init(int w, int h)
     if (!fallback_t)
     {
         if(!if_exists(asset_path("load.png"))){
-           if (if_exists("/user/appmeta/RPIHBSTOR/icon0.png"))
-               fallback_t = load_png_asset_into_texture("/user/appmeta/RPIHBSTOR/icon0.png");
+           if (if_exists("/user/appmeta/RPIH00001/icon0.png"))
+               fallback_t = load_png_asset_into_texture("/user/appmeta/RPIH00001/icon0.png");
            else
-              fallback_t = load_png_asset_into_texture("/user/appmeta/external/RPIHBSTOR/icon0.png");
+              fallback_t = load_png_asset_into_texture("/user/appmeta/external/RPIH00001/icon0.png");
         }
         else
           fallback_t = load_png_asset_into_texture(asset_path("load.png"));
@@ -612,9 +612,9 @@ static void actions_for_settings(int action, std::shared_ptr<layout_t> &l){
         {
             //log_info("sssssss");
             loadmsg(getLangSTR(SEARCHING));
-            if(dl_from_url(fmt::format("{}/store.db", tmp), "/user/app/RPIHBSTOR/store_downloaded.db") != 0){
+            if(dl_from_url(fmt::format("{}/store.db", tmp), "/user/app/RPIH00001/store_downloaded.db") != 0){
                 msgok(NORMAL, getLangSTR(INVAL_CDN));
-                unlink("/user/app/RPIHBSTOR/store_downloaded.db");
+                unlink("/user/app/RPIH00001/store_downloaded.db");
                 goto error;
             }
             sceMsgDialogTerminate();
@@ -681,12 +681,12 @@ static void actions_for_settings(int action, std::shared_ptr<layout_t> &l){
             
         log_info("Settings -> Clear Cached images and content");
 
-        if (rmtree("/user/app/RPIHBSTOR/storedata"))
+        if (rmtree("/user/app/RPIH00001/storedata"))
             msgok(NORMAL, getLangSTR(CACHE_CLEARED));
         else
             msgok(WARNING, getLangSTR(CACHE_FAILED));
 
-        mkdir("/user/app/RPIHBSTOR/storedata", 0777);
+        mkdir("/user/app/RPIH00001/storedata", 0777);
 
         break;
     }
@@ -711,7 +711,7 @@ static void actions_for_settings(int action, std::shared_ptr<layout_t> &l){
         log_info("Settings -> Reset");
 
         set.opt[CDN_URL] = "https://api.pkg-zone.com";
-        set.opt[TMP_PATH] = "/user/app/RPIHBSTOR/downloads";
+        set.opt[TMP_PATH] = "/user/app/RPIH00001/downloads";
         set.opt[FNT_PATH] = "/system_ex/app/NPXS20113/bdjstack/lib/fonts/SCE-PS3-RD-R-LATIN.TTF";
         
         set.auto_install = true;
