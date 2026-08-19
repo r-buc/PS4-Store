@@ -3,7 +3,7 @@
   <volume>
     <volume_type>pkg_ps4_app</volume_type>
     <volume_ts>2021-11-16 23:01:37</volume_ts>
-    <package content_id="IV0002-RPIHBSTOR_00-STOREUPD00000000" passcode="00000000000000000000000000000000" storage_type="digital50" app_type="full" />
+    <package content_id="IV0002-RPIH00001_00-STOREUPD00000000" passcode="00000000000000000000000000000000" storage_type="digital50" app_type="full" />
     <chunk_info chunk_count="1" scenario_count="1">
       <chunks>
         <chunk id="0" layer_no="0" label="Chunk #0" />

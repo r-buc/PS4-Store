@@ -211,7 +211,7 @@ int sql_index_tokens(std::shared_ptr<layout_t>  &l, int count)
            continue;
 
         // see if t.token_d[PICPATH].off includes the string /user/app where images are cached
-        if(t.token_d[PICPATH].off.find("/user/app/RPIHBSTOR/") == std::string::npos)
+        if(t.token_d[PICPATH].off.find("/user/app/RPIH00001/") == std::string::npos)
             continue;
 
         // calc the progress %

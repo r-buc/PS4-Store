@@ -2,8 +2,8 @@
 # Package metadata.
 TITLE       := Store
 VERSION     := 2.00
-TITLE_ID    := RPIHBSTOR
-CONTENT_ID  := IV0002-RPIHBSTOR_00-STOREUPD00000000
+TITLE_ID    := RPIH00001
+CONTENT_ID  := IV0002-RPIH00001_00-STOREUPD00000000
 
 # Libraries linked into the ELF.
 LIBS        := -luser_mem_sys -lc++ -lz -ljbc -lc -lkernel  -lcurl  -lpolarssl -lSceVideoOut -lSceNet -lSceSysmodule -lSceAudioOut -lSceUserService -lScePigletv2VSH -lSceSysmodule -lSceFreeType \
@@ -66,6 +66,7 @@ pkg.gp4: eboot.bin sce_sys/param.sfo
 
 
 sce_sys/param.sfo: Makefile
+	@mkdir -p sce_sys
 	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_new $@
 	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ APP_TYPE --type Integer --maxsize 4 --value 1 
 	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ APP_VER --type Utf8 --maxsize 8 --value '$(VERSION)'
