@@ -284,7 +284,8 @@ bool LoadLangs(int LangCode)
 {
     std::string dst;
     #ifdef __ORBIS__  
-    dst = fmt::format("{0:}/{1:d}/lang.ini", LANG_DIR, LangCode);
+    dst = fmt::format("{0:d}/lang.ini", LangCode);
+    dst = std::string(LANG_DIR) + dst;
     #else
     dst = asset_path("lang.ini");
     #endif
