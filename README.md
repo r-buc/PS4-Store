@@ -41,6 +41,8 @@
 
 Replace your homebrew.elf , homebrew.elf.sig and remote.md5 with the Latest from the Release Section of this Github to a folder named "update" on your servers root
 
+The `latest` GitHub Release is rebuilt automatically on every push to `master`/`main` and now includes `homebrew.elf` and `remote.md5` alongside `Store-R2.pkg`, so they always match the current source. `homebrew.elf.sig` is **not** produced by CI (it requires the maintainer's private RSA signing key, which is intentionally not stored in this repo) and must still be generated and uploaded manually if `Secure_Boot` is enabled on your CDN.
+
 # Settings
 
 the ini file is either loaded by the app dir or from USB0 when the app is booted

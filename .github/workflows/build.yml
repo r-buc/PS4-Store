@@ -40,12 +40,20 @@ jobs:
           mv "$pkg" Store-R2.pkg
         fi
         test -f Store-R2.pkg || { echo "Error: Store-R2.pkg was not created"; exit 1; }
+        test -f homebrew.elf || { echo "Error: homebrew.elf was not created"; exit 1; }
+        # Regenerate remote.md5 so CDN operators can detect this build as an update
+        # (Store-Loader compares the *contents* of remote.md5 vs local.md5 to decide
+        # whether a new homebrew.elf needs to be downloaded).
+        md5sum homebrew.elf | awk '{print $1}' > remote.md5
 
     - name: Upload PKG artifact
       uses: actions/upload-artifact@v4
       with:
         name: PS4-Store-PKG
-        path: Store/Store-R2.pkg
+        path: |
+          Store/Store-R2.pkg
+          Store/homebrew.elf
+          Store/remote.md5
 
     - name: Publish latest release
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
@@ -54,4 +62,7 @@ jobs:
         tag_name: latest
         name: Latest Build
         prerelease: true
-        files: Store/Store-R2.pkg
+        files: |
+          Store/Store-R2.pkg
+          Store/homebrew.elf
+          Store/remote.md5
