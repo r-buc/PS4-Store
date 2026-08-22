@@ -46,6 +46,15 @@ jobs:
         # whether a new homebrew.elf needs to be downloaded).
         md5sum homebrew.elf | awk '{print $1}' > remote.md5
 
+    - name: Determine store version
+      id: version
+      run: |
+        major=$(grep -oP '#define\s+VERSION_MAJOR\s+\K[0-9]+' Store/include/defines.h)
+        minor=$(grep -oP '#define\s+VERSION_MINOR\s+\K[0-9]+' Store/include/defines.h)
+        test -n "$major" || { echo "Error: could not determine VERSION_MAJOR"; exit 1; }
+        test -n "$minor" || { echo "Error: could not determine VERSION_MINOR"; exit 1; }
+        echo "tag=${major}.${minor}" >> "$GITHUB_OUTPUT"
+
     - name: Upload PKG artifact
       uses: actions/upload-artifact@v4
       with:
@@ -55,13 +64,16 @@ jobs:
           Store/homebrew.elf
           Store/remote.md5
 
-    - name: Publish latest release
+    - name: Publish release
       if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: latest
-        name: Latest Build
-        prerelease: true
+        # Tagged numerically (x.y) so the CDN server can compare this value
+        # against the currently deployed Store binary to decide whether an
+        # update is needed.
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: Store ${{ steps.version.outputs.tag }}
+        prerelease: false
         files: |
           Store/Store-R2.pkg
           Store/homebrew.elf
