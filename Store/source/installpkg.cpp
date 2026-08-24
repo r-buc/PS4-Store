@@ -293,19 +293,23 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
         return PKG_ERROR("pkginstall_remote: empty title_id", ret, ta);
     }
 
-    /* Derive package_size — stored as raw bytes in the DB where available */
+    /* Derive package_size. Prefer the content-length from the HTTP HEAD
+     * (already fetched by ini_dl_req via dl_from_url_v2) since it's an
+     * authoritative raw byte count. The DB's "Size" column is a *human
+     * formatted* string (e.g. "685.42 MB", see hb.js formatBytes()), NOT raw
+     * bytes — strtoul() on it would silently parse only the leading digits
+     * before the decimal point (e.g. 685), giving a wildly wrong byte count
+     * that's still non-zero, so it must only be used as a last resort. */
     unsigned long pkg_size = 0;
-    if (!size_str.empty()) {
+    if (ta->contentLength.load() > 0)
+        pkg_size = (unsigned long)ta->contentLength.load();
+
+    if (pkg_size == 0 && !size_str.empty()) {
         char* end = nullptr;
         unsigned long parsed = strtoul(size_str.c_str(), &end, 10);
         if (end && end != size_str.c_str())
             pkg_size = parsed;
     }
-
-    /* Use the content-length from the HTTP HEAD (already fetched by ini_dl_req
-     * via dl_from_url_v2) as a more reliable source when available. */
-    if (pkg_size == 0 && ta->contentLength.load() > 0)
-        pkg_size = (unsigned long)ta->contentLength.load();
 
     if (!app_inst_util_init())
         return PKG_ERROR("AppInstUtil", ret, ta);
