@@ -56,7 +56,15 @@ struct bgft_download_param {
     const char* release_date;
     const char* package_type;
     const char* package_sub_type;
-    unsigned long package_size;
+    /* Must be uint32_t, NOT unsigned long: the real kernel struct
+     * (OrbisBgftDownloadParam.packageSize, per OpenOrbis's _types/bgft.h /
+     * flatz's ps4_stub_lib_maker_v2) uses a 4-byte field here. Declaring
+     * this as `unsigned long` (8 bytes on this LP64 ABI) doesn't shift any
+     * other field's offset since it's last, but it does mean values are
+     * truncated to 32 bits wherever this gets read/compared as a real
+     * uint32_t downstream - most importantly, package_size itself silently
+     * wraps for any package >= 4GiB. */
+    uint32_t package_size;
 };
 
 

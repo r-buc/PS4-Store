@@ -55,3 +55,6 @@ dkms.conf
 # from the TITLE_ID/CONTENT_ID variables; never commit this binary so a stale
 # copy can't mask future title id changes.
 Store/sce_sys/param.sfo
+
+getlog.sh
+*.log

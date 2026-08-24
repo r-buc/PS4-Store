@@ -330,9 +330,15 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     log_info("%s", buffer);
 
     const std::string& picpath_str = ta->token_d[PICPATH].off;
+    /* flatz's reference (both the remote-URL and StorageEx paths) always
+     * falls back to an empty string here, never a made-up local path — BGFT
+     * appears to validate/open a non-empty icon_path, so pointing it at a
+     * file that doesn't actually exist on the PS4 (this repo has no
+     * fakepic.png asset anywhere) is a plausible cause of an immediate
+     * registration failure (e.g. SCE_BGFT_ERROR_INVALID_PARAMETER). */
     const char* icon_path = (!picpath_str.empty() && if_exists(picpath_str.c_str()))
         ? picpath_str.c_str()
-        : "/update/fakepic.png";
+        : "";
 
     /* "Update" apptype means this is a patch PKG */
     const bool is_patch = (apptype == "Update");
@@ -343,14 +349,24 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     download_params.param.entitlement_type   = 5;
     download_params.param.id                 = !content_id.empty() ? content_id.c_str() : "";
     download_params.param.content_url        = pkg_url;
+    download_params.param.content_ex_url     = "";
     download_params.param.content_name       = buffer;
     download_params.param.icon_path          = icon_path;
+    download_params.param.sku_id             = "";
     download_params.param.playgo_scenario_id = "0";
     download_params.param.option             = BGFT_TASK_OPTION_DISABLE_CDN_QUERY_PARAM;
+    download_params.param.release_date       = "";
     download_params.param.package_type       = "PS4";
     download_params.param.package_sub_type   = "";
     download_params.param.package_size       = pkg_size;
     download_params.slot                     = 0;
+
+    /* Log every field handed to BGFT so a registration failure (e.g. the
+     * kernel rejecting an empty/malformed content_id with
+     * SCE_BGFT_ERROR_INVALID_PARAMETER = 0x80990004) can be root-caused
+     * from store.log alone, without needing to reproduce interactively. */
+    log_info("pkginstall_remote params: id='%s' url='%s' name='%s' icon='%s' size=%lu is_patch=%d",
+             download_params.param.id, pkg_url, buffer, icon_path, pkg_size, (int)is_patch);
 
     {
         int retry = 0;
@@ -582,7 +598,7 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
         const std::string& picpath_str = ta->token_d[PICPATH].off;
         const char* icon_path = (!picpath_str.empty() && if_exists(picpath_str.c_str()))
             ? picpath_str.c_str()
-            : "/update/fakepic.png";
+            : "";
 
         /* Detect patch by reading the local PKG header */
         const bool is_patch = pkg_is_patch(fullpath);
