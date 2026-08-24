@@ -144,9 +144,9 @@ bool bgft_init(void) {
         memset(s_bgft_init_params.heap, 0, s_bgft_init_params.heapSize);
     }
 
-    ret = sceBgftServiceInit(&s_bgft_init_params);
+    ret = sceBgftServiceIntInit(&s_bgft_init_params);
     if (ret) {
-        log_debug( "sceBgftInitialize failed: 0x%08X", ret);
+        log_debug( "sceBgftServiceIntInit failed: 0x%08X", ret);
         goto err_bgft_heap_free;
     }
 
@@ -176,9 +176,9 @@ void bgft_fini(void) {
         return;
     }
 
-    ret = sceBgftServiceTerm();
+    ret = sceBgftServiceIntTerm();
     if (ret) {
-        log_debug( "sceBgftServiceTerm failed: 0x%08X", ret);
+        log_debug( "sceBgftServiceIntTerm failed: 0x%08X", ret);
     }
 
     if (s_bgft_init_params.heap) {
@@ -365,8 +365,15 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
      * kernel rejecting an empty/malformed content_id with
      * SCE_BGFT_ERROR_INVALID_PARAMETER = 0x80990004) can be root-caused
      * from store.log alone, without needing to reproduce interactively. */
-    log_info("pkginstall_remote params: id='%s' url='%s' name='%s' icon='%s' size=%lu is_patch=%d",
-             download_params.param.id, pkg_url, buffer, icon_path, pkg_size, (int)is_patch);
+    log_info("pkginstall_remote params: user_id=%d entitlement_type=%d id='%s' url='%s' "
+             "name='%s' icon='%s' sku_id='%s' playgo='%s' option=0x%x release_date='%s' "
+             "package_type='%s' package_sub_type='%s' size=%u is_patch=%d",
+             user_id, download_params.param.entitlement_type, download_params.param.id,
+             pkg_url, buffer, icon_path, download_params.param.sku_id,
+             download_params.param.playgo_scenario_id, (unsigned int)download_params.param.option,
+             download_params.param.release_date, download_params.param.package_type,
+             download_params.param.package_sub_type, download_params.param.package_size,
+             (int)is_patch);
 
     {
         int retry = 0;
@@ -374,10 +381,16 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
         while (true) {
             log_info("%s: registering task (is_patch=%d)", __FUNCTION__, (int)is_patch);
             if (!is_patch) {
-                /* Matches flatz/ps4_remote_pkg_installer's
-                 * bgft_download_register_package_task(): register directly
-                 * via sceBgftServiceIntDownloadRegisterTask(), rather than the
-                 * internal storage-Ex variant, for non-patch remote PKGs. */
+                /* Call the toolchain's own statically-linked stub directly
+                 * (matches njzydark/PS4RPI's proven-working fix for this
+                 * exact SCE_BGFT_ERROR_INVALID_PARAMETER / 0x80990004 -
+                 * their bug was manually re-resolving BGFT functions by a
+                 * mix of "Int"/no-"Int" names via sceKernelDlsym(), and the
+                 * fix was to stop doing that and just use the toolchain's
+                 * correctly-named import). The real fix for our case was
+                 * bgft_init()/bgft_fini() calling the wrong (no "Int")
+                 * sceBgftServiceInit/sceBgftServiceTerm names, leaving BGFT
+                 * never properly initialized in the first place. */
                 ret = sceBgftServiceIntDownloadRegisterTask(&download_params.param, &task_id);
             } else {
                 ret = sceBgftServiceIntDebugDownloadRegisterPkg(&download_params.param, &task_id);

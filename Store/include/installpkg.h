@@ -202,12 +202,23 @@ int sceAppInstUtilAppPrepareOverwritePkg(const char* pkg_path);
 int sceAppInstUtilGetPrimaryAppSlot(const char* title_id, int* slot);
 int sceAppInstUtilAppUnInstall(const char* title_id);
 int sceAppInstUtilAppGetSize(const char* title_id, uint64_t* buf);
-int sceBgftServiceInit(struct bgft_init_params*  params);
+/* Real exported name is sceBgftServiceIntInit (with "Int") - matches
+ * OpenOrbis' own orbis/Bgft.h and is what actually initializes BGFT
+ * correctly; the previous "sceBgftServiceInit" (no "Int") name silently
+ * linked to something else and left BGFT effectively uninitialized,
+ * which is the most likely cause of every registration call failing
+ * with SCE_BGFT_ERROR_INVALID_PARAMETER (0x80990004) regardless of how
+ * valid the registration params themselves were. */
+int sceBgftServiceIntInit(struct bgft_init_params*  params);
 int sceBgftServiceIntDownloadRegisterTaskByStorageEx(struct bgft_download_param_ex* params, int* task_id);
 int sceBgftServiceIntDownloadRegisterTask(struct bgft_download_param* params, int* task_id);
+/* "Store" variant: same params as the plain registration call, but also
+ * fills in a detailed error info block on failure - lets us see exactly
+ * which field BGFT rejected instead of just an opaque top-level code. */
+int sceBgftServiceIntDownloadRegisterTaskStore(struct bgft_download_param* params, int* task_id, struct _SceBgftDownloadRegisterErrorInfo* errorInfo);
 int sceBgftServiceIntDebugDownloadRegisterPkg(struct bgft_download_param* params, int* task_id);
 int sceBgftServiceDownloadStartTask(int task_id);
-int sceBgftServiceTerm(void);
+int sceBgftServiceIntTerm(void);
 int sceUserServiceGetForegroundUser(int* user_id);
 }
 uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install);
