@@ -287,6 +287,16 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     const std::string& size_str   = ta->token_d[SIZE].off;
     const std::string& apptype    = ta->token_d[APPTYPE].off;
     const std::string& content_id = ta->token_d[CONTENT_ID].off;
+    const std::string& manifest_url = ta->token_d[MANIFEST].off;
+
+    /* BGFT's remote-URL registration path (sceBgftServiceIntDownloadRegisterTask)
+     * expects contentUrl to point to a JSON "piece manifest" describing the
+     * package (originalFileSize/packageDigest/pieces[]), not the raw .pkg
+     * file - see njzydark/PS4RPI's pkg_setup_prerequisites()/server.c. When
+     * the CDN provides one (currently: locally-hosted PKGs only), use it;
+     * otherwise fall back to the previous behavior of pointing straight at
+     * the raw package URL (e.g. for proxied remote-store items). */
+    const char* content_url = !manifest_url.empty() ? manifest_url.c_str() : pkg_url;
 
     if (title_id.empty()) {
         log_error("pkginstall_remote: title_id is empty — token_d not populated?");
@@ -365,7 +375,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     download_params.param.user_id            = user_id;
     download_params.param.entitlement_type   = 5;
     download_params.param.id                 = !content_id.empty() ? content_id.c_str() : "";
-    download_params.param.content_url        = pkg_url;
+    download_params.param.content_url        = content_url;
     download_params.param.content_ex_url     = "";
     download_params.param.content_name       = buffer;
     download_params.param.icon_path          = icon_path;
@@ -386,7 +396,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
              "name='%s' icon='%s' sku_id='%s' playgo='%s' option=0x%x release_date='%s' "
              "package_type='%s' package_sub_type='%s' size=%u is_patch=%d",
              user_id, download_params.param.entitlement_type, download_params.param.id,
-             pkg_url, buffer, icon_path, download_params.param.sku_id,
+             content_url, buffer, icon_path, download_params.param.sku_id,
              download_params.param.playgo_scenario_id, (unsigned int)download_params.param.option,
              download_params.param.release_date, download_params.param.package_type,
              download_params.param.package_sub_type, download_params.param.package_size,
