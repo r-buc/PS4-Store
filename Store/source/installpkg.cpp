@@ -343,6 +343,23 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     /* "Update" apptype means this is a patch PKG */
     const bool is_patch = (apptype == "Update");
 
+    /* package_type is NOT a generic "PS4" string - BGFT validates it against
+     * specific per-content-type values. Confirmed against njzydark/PS4RPI's
+     * server.c (a real, working remote installer), which maps the PKG's
+     * actual content type to "PS4GD" (base game), "PS4AC" (DLC/additional
+     * content), "PS4AL", or "PS4DP" (patch) - never a bare "PS4". Passing an
+     * unrecognized value here is a very plausible cause of BGFT
+     * unconditionally rejecting registration with
+     * SCE_BGFT_ERROR_INVALID_PARAMETER regardless of how valid every other
+     * field is, since we don't have the raw PKG content_type enum available
+     * for remote (no local file) installs, derive the equivalent from the
+     * apptype string already resolved from the DB's APPTYPE/CATEGORY. */
+    const char* package_type = "PS4GD";
+    if (apptype == "DLC")
+        package_type = "PS4AC";
+    else if (apptype == "Update")
+        package_type = "PS4DP";
+
     struct bgft_download_param_ex download_params;
     memset(&download_params, 0, sizeof(download_params));
     download_params.param.user_id            = user_id;
@@ -356,7 +373,7 @@ uint32_t pkginstall_remote(const char* pkg_url, dl_arg_t* ta, bool Auto_install)
     download_params.param.playgo_scenario_id = "0";
     download_params.param.option             = BGFT_TASK_OPTION_DISABLE_CDN_QUERY_PARAM;
     download_params.param.release_date       = "";
-    download_params.param.package_type       = "PS4";
+    download_params.param.package_type       = package_type;
     download_params.param.package_sub_type   = "";
     download_params.param.package_size       = pkg_size;
     download_params.slot                     = 0;
@@ -616,6 +633,17 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
         /* Detect patch by reading the local PKG header */
         const bool is_patch = pkg_is_patch(fullpath);
 
+        /* package_type must match a real BGFT-recognized value ("PS4GD" /
+         * "PS4AC" / "PS4AL" / "PS4DP"), not a generic "PS4" - see the same
+         * fix/comment in pkginstall_remote() above. Use the DB's APPTYPE
+         * token (already available on ta) the same way. */
+        const std::string& apptype = ta->token_d[APPTYPE].off;
+        const char* package_type = "PS4GD";
+        if (apptype == "DLC")
+            package_type = "PS4AC";
+        else if (apptype == "Update" || is_patch)
+            package_type = "PS4DP";
+
         struct bgft_download_param_ex download_params;
         memset(&download_params, 0, sizeof(download_params));
         download_params.param.user_id            = user_id;
@@ -626,7 +654,7 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
         download_params.param.icon_path          = icon_path;
         download_params.param.playgo_scenario_id = "0";
         download_params.param.option             = BGFT_TASK_OPTION_INVISIBLE;
-        download_params.param.package_type       = "PS4";
+        download_params.param.package_type       = package_type;
         download_params.param.package_sub_type   = "";
         download_params.slot                     = 0;
 
