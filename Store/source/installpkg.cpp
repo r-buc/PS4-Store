@@ -598,7 +598,12 @@ uint32_t pkginstall(const char *fullpath, dl_arg_t* ta, bool Auto_install)
 
     if( if_exists(fullpath) )
     {
-      if (sceAppInst_done) {
+      /* Only (re-)initialize AppInstUtil when it's NOT already done - this
+       * was previously inverted (`if (sceAppInst_done)`), which meant a
+       * fresh install always skipped initialization here and relied on some
+       * other code path (e.g. app_inst_util_is_exists()) having already run
+       * first. Match the correct pattern used everywhere else in this file. */
+      if (!sceAppInst_done) {
           log_info("Initializing AppInstUtil...");
 
           if (!app_inst_util_init())
